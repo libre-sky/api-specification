@@ -44,10 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
+                $ref: "#/components/schemas/StationsResponse"
   /stations/{station_id}:
     get:
       parameters:
@@ -66,7 +63,8 @@ paths:
 components:
   schemas:
     Decimal:
-      type: string
+      type: number
+      format: decimal
     GeoCoords:
       properties:
         latitude:
@@ -76,6 +74,9 @@ components:
         precision:
           $ref: "#/components/schemas/Decimal"
           description: "The precision, in meters, of the coordinates"
+      required:
+        - latitude
+        - longitude
     SegmentVariant:
       enum:
         - std_atmospheric
@@ -107,7 +108,7 @@ components:
       format: Base64 (URL-Safe)
       description: "A Base64 string representing the station's public key"
     Timestamp:
-      type: number
+      type: integer
       format: unix Timestamp (seconds)
     Sensor:
       properties:
@@ -117,12 +118,17 @@ components:
           type: string
         product_page:
           type: string
+      required:
+        - model
     MeasurementBase:
       properties:
         variant:
           type: string
         sensor:
           $ref: "#/components/schemas/Sensor"
+      required:
+        - variant
+        - sensor
     MeasurementTemperature:
       allOf:
         - $ref: "#/components/schemas/MeasurementBase"
@@ -131,6 +137,9 @@ components:
           $ref: "#/components/schemas/TemperatureUnit"
         value:
           $ref: "#/components/schemas/Decimal"
+      required:
+        - unit
+        - value
     MeasurementPressure:
       allOf:
         - $ref: "#/components/schemas/MeasurementBase"
@@ -139,6 +148,9 @@ components:
           $ref: "#/components/schemas/PressureUnit"
         value:
           $ref: "#/components/schemas/Decimal"
+      required:
+        - unit
+        - value
     MeasurementHumidity:
       allOf:
         - $ref: "#/components/schemas/MeasurementBase"
@@ -147,6 +159,9 @@ components:
           $ref: "#/components/schemas/GenericUnit"
         value:
           $ref: "#/components/schemas/Decimal"
+      required:
+        - unit
+        - value
     Measurement:
       oneOf:
         - $ref: "#/components/schemas/MeasurementTemperature"
@@ -156,12 +171,22 @@ components:
       properties:
         variant:
           $ref: "#/components/schemas/SegmentVariant"
+      required:
+        - variant
     SegmentAtmospheric:
       allOf:
         - $ref: "#/components/schemas/SegmentBase"
       properties:
         temperature:
           $ref: "#/components/schemas/MeasurementTemperature"
+        pressure:
+          $ref: "#/components/schemas/MeasurementPressure"
+        humidity:
+          $ref: "#/components/schemas/MeasurementHumidity"
+      required:
+        - temperature
+        - pressure
+        - humidity
     Segment:
       oneOf:
         - $ref: "#/components/schemas/SegmentAtmospheric"
@@ -181,6 +206,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Segment"
+        coords:
+          $ref: "#/components/schemas/GeoCoords"
+      required:
+        - station_id
+        - timestamp
+        - segments
     Station:
       properties:
         id:
@@ -225,4 +256,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Endpoint"
+    Page:
+      properties:
+        prev:
+          type: string
+        next:
+          type: string
+    StationsResponse:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Station"
+      required:
+        - data
       
