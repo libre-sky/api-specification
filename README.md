@@ -39,3 +39,11 @@ These measurements are typically the easiest to collect, as sensors that collect
 </tbody>
 </table>
 
+
+## Tools
+
+### Autogen
+
+```bash
+./cmd/generate <language>
+```

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+generate(){
+    docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
+        -i /local/openapi.yml \
+        -g "$1" \
+        -o "/local/output/$1"
+}
+
+generate $@
