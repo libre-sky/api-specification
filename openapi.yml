@@ -1,0 +1,228 @@
+openapi: 3.0.4
+info:
+  title: LibreSky Weather API
+  description: An API for retrieving weather data.
+  version: 0.0.1
+paths:
+  /info:
+    get:
+      summary: "Returns the server's specification, including supported endpoints"
+      responses:
+        200:
+          description: "The server details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerInfo"
+  /stations:
+    get:
+      summary: Returns a list of stations
+      parameters:
+        - in: query
+          name: lat
+          schema:
+            type: number
+        - in: query
+          name: lon
+          schema:
+            type: number
+        - in: query
+          name: after
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: proximity
+          schema:
+            $ref: "#/components/schemas/Decimal"
+      responses:
+        200:
+          description: An OK response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+  /stations/{station_id}:
+    get:
+      parameters:
+        - in: path
+          name: station_id
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: "describes a station"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+components:
+  schemas:
+    Decimal:
+      type: string
+    GeoCoords:
+      properties:
+        latitude:
+          $ref: "#/components/schemas/Decimal"
+        longitude:
+          $ref: "#/components/schemas/Decimal"
+        precision:
+          $ref: "#/components/schemas/Decimal"
+          description: "The precision, in meters, of the coordinates"
+    SegmentVariant:
+      enum:
+        - std_atmospheric
+      type: string
+    StationStatus:
+      enum:
+        - active
+        - inactive
+        - maintenance
+        - unknown
+    TemperatureUnit:
+      enum:
+        - celsius
+        - fahrenheit
+    PressureUnit:
+      enum:
+        - kPa
+        - hPa
+        - Pa
+        - mBar
+        - bar
+        - mmHg
+    GenericUnit:
+      enum:
+        - percent
+        - no_unit
+    StationId:
+      type: string
+      format: Base64 (URL-Safe)
+      description: "A Base64 string representing the station's public key"
+    Timestamp:
+      type: number
+      format: unix Timestamp (seconds)
+    Sensor:
+      properties:
+        model:
+          type: string
+        datasheet_url:
+          type: string
+        product_page:
+          type: string
+    MeasurementBase:
+      properties:
+        variant:
+          type: string
+        sensor:
+          $ref: "#/components/schemas/Sensor"
+    MeasurementTemperature:
+      allOf:
+        - $ref: "#/components/schemas/MeasurementBase"
+      properties:
+        unit:
+          $ref: "#/components/schemas/TemperatureUnit"
+        value:
+          $ref: "#/components/schemas/Decimal"
+    MeasurementPressure:
+      allOf:
+        - $ref: "#/components/schemas/MeasurementBase"
+      properties:
+        unit:
+          $ref: "#/components/schemas/PressureUnit"
+        value:
+          $ref: "#/components/schemas/Decimal"
+    MeasurementHumidity:
+      allOf:
+        - $ref: "#/components/schemas/MeasurementBase"
+      properties:
+        unit:
+          $ref: "#/components/schemas/GenericUnit"
+        value:
+          $ref: "#/components/schemas/Decimal"
+    Measurement:
+      oneOf:
+        - $ref: "#/components/schemas/MeasurementTemperature"
+    SegmentBase:
+      type: object
+      description: "A segment is the data payload for a measurement. SegmentBase is the common fields shared between segments."
+      properties:
+        variant:
+          $ref: "#/components/schemas/SegmentVariant"
+    SegmentAtmospheric:
+      allOf:
+        - $ref: "#/components/schemas/SegmentBase"
+      properties:
+        temperature:
+          $ref: "#/components/schemas/MeasurementTemperature"
+    Segment:
+      oneOf:
+        - $ref: "#/components/schemas/SegmentAtmospheric"
+      discriminator:
+        propertyName: variant
+      required:
+        - variant
+    Report:
+      type: object
+      description: "Represents a series of Segments, reported at an instant in time."
+      properties:
+        station_id:
+          $ref: "#/components/schemas/StationId"
+        timestamp:
+          $ref: "#/components/schemas/Timestamp"
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Segment"
+    Station:
+      properties:
+        id:
+          $ref: "#/components/schemas/StationId"
+        coords:
+          $ref: "#/components/schemas/GeoCoords"
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/SegmentVariant"
+        status:
+          $ref: "#/components/schemas/StationStatus"
+        first_heard:
+          description: "The time of first-heard broadcast"
+          $ref: "#/components/schemas/Timestamp"
+        last_heard:
+          description: "The time of last broadcast for this station"
+          $ref: "#/components/schemas/Timestamp"
+    EndpointVariant:
+      enum:
+        - stations
+        - reports
+        - forecasts
+    ServerStatus:
+      enum:
+        - available
+        - degraded
+        - unavailable
+    Endpoint:
+      properties:
+        variant:
+          $ref: "#/components/schemas/EndpointVariant"
+        supported:
+          type: boolean
+      required:
+        - variant
+    ServerInfo:
+      properties:
+        status:
+          $ref: "#/components/schemas/ServerStatus"
+        endpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Endpoint"
+      
